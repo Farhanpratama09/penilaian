@@ -1,0 +1,177 @@
+@extends('admin.layouts.main')
+@section('content')
+    <div class="container-xxl flex-grow-1 container-p-y">
+
+        @if (session()->get('errors'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="uil uil-info-circle me-2"></i>{{ session()->get('errors')->first() }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+        @if (session()->get('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="uil uil-info-circle me-2"></i>{{ session()->get('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Tahun</h5>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                    <i class="bx bx-calendar-plus me-1"></i> Tahun
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <div class="table-responsive text-nowrap">
+                    <table class="table" id="table-1">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tahun</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            @foreach ($tahun as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $item->tahun_penilaian }}</td>
+                                    <td>
+                                        @if ($item->aktif == 1)
+                                            <span class="badge bg-label-success me-1">Aktif</span>
+                                        @else
+                                            <span class="badge bg-label-danger me-1">Tidak Aktif</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#staticBackdrop-{{ $item->id }}"><i
+                                                class='bx bx-calendar-x me-1'></i></button>
+                                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#edit-{{ $item->id }}"><i
+                                                class='bx bx-calendar-edit me-1'></i></button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- modal buat akun --}}
+    <form action="{{ route('tambah_tahun') }}" method="post">
+        @method('post')
+        @csrf
+        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="staticBackdropLabel">Tambah Tahun Penilaian</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <label for="tahun_penilaian" class="col-sm-2 col-form-label">Tahun</label>
+                            <div class="col-sm-10">
+                                <input type="number" class="form-control" id="tahun_penilaian" name="tahun_penilaian">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="aktif" class="col-2 col-form-label">Status</label>
+                            <div class="col-10">
+                                <select class="form-select" name="aktif" id="aktif">
+                                    <option value="1">Aktif</option>
+                                    <option value="0">Tidak Aktif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {{-- end modal --}}
+
+    @foreach ($tahun as $item)
+        {{-- modal hapus akun Kepala Sekolah --}}
+        <form action="{{ route('delete_tahun', $item->id) }}" method="post">
+            @method('delete')
+            @csrf
+            <div class="modal fade" id="staticBackdrop-{{ $item->id }}" data-bs-backdrop="static"
+                data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Hapus Tahun Penilaian</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            Apakah anda yakin ingin menghapus tahun penilaian ini?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-danger">Hapus</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        {{-- end modal --}}
+
+        {{-- modal edit tahun --}}
+        <form action="{{ route('edit_tahun', $item->id) }}" method="post">
+            @method('put')
+            @csrf
+            <div class="modal fade" id="edit-{{ $item->id }}" data-bs-backdrop="static" data-bs-keyboard="false"
+                tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Edit Tahun Penilaian</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <label for="tahun_penilaian" class="col-sm-2 col-form-label">Tahun</label>
+                                <div class="col-sm-10">
+                                    <input type="number" class="form-control" id="tahun_penilaian-{{ $item->id }}"
+                                        name="tahun_penilaian" value="{{ $item->tahun_penilaian }}">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <label for="aktif" class="col-2 col-form-label">Status</label>
+                                <div class="col-10">
+                                    <select class="form-select" name="aktif" id="aktif-{{ $item->id }}">
+                                        <option value="1" {{ $item->aktif == 1 ? 'selected' : '' }}>Aktif</option>
+                                        <option value="0" {{ $item->aktif == 0 ? 'selected' : '' }}>Tidak Aktif
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        {{-- end modal --}}
+    @endforeach
+    <style>
+        /* CSS untuk tombol Tambah Tahun */
+        .card-header .btn-success {
+            margin-left: auto;
+        }
+    </style>
+@endsection
