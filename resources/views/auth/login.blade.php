@@ -27,9 +27,19 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Login | Penilaian Perilaku Kinerja Guru</title>
+    <title>@yield('title', 'Login') | Sistem Penilaian Kinerja Guru BARS</title>
 
-    <meta name="description" content="" />
+    <meta name="description" content="@yield('meta_description', 'Portal Masuk Sistem Penilaian Kinerja Guru Berbasis BARS SDN 01 Sungai Raya Kepulauan')" />
+    <meta name="keywords" content="login penilaian guru, sistem penilaian kinerja guru, metode BARS, evaluasi guru, SDN 01 Sungai Raya Kepulauan" />
+    <meta name="author" content="SDN 01 Sungai Raya Kepulauan" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ url()->current() }}" />
+    <meta property="og:title" content="Login | Sistem Penilaian Kinerja Guru BARS" />
+    <meta property="og:description" content="Portal Masuk Sistem Penilaian Kinerja Guru Berbasis BARS SDN 01 Sungai Raya Kepulauan" />
+    <meta property="og:image" content="{{ asset('template/assetsnew/img/favicon/favicon.ico') }}" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ url('template/assetsnew/img/favicon/favicon.ico') }}" />
@@ -58,16 +68,16 @@
     <link rel="stylesheet" href="{{ url('template/assetsnew/vendor/css/pages/page-auth.css') }}" />
     <!-- Helpers -->
     <script src="{{ url('template/assetsnew/vendor/js/helpers.js') }}"></script>
-
-    <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
-    <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
     <script src="{{ url('template/assetsnew/js/config.js') }}"></script>
+
+    <!-- Vite Assets (Tailwind CSS & JS) -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
   </head>
 
   <body>
     <!-- Content -->
 
-    <div class="container-xxl">
+    <main class="container-xxl">
       <div class="authentication-wrapper authentication-basic container-p-y">
         <div class="authentication-inner">
           <!-- Register -->
@@ -179,7 +189,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- Core JS -->
     <!-- build:js assets/vendor/js/core.js -->

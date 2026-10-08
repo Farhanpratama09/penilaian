@@ -1,11 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Penilaian | {{ auth()->user()->nama }}</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>@yield('title', 'Sistem Penilaian Kinerja Guru BARS') | {{ auth()->check() ? auth()->user()->nama : 'Admin' }}</title>
+
+    <!-- SEO & Metadata -->
+    <meta name="description" content="@yield('meta_description', 'Sistem Informasi Penilaian Kinerja Guru Berbasis Behaviorally Anchored Rating Scale (BARS) SDN 01 Sungai Raya Kepulauan')">
+    <meta name="keywords" content="penilaian kinerja guru, metode BARS, evaluasi guru, SDN 01 Sungai Raya Kepulauan, sistem informasi">
+    <meta name="author" content="SDN 01 Sungai Raya Kepulauan">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="@yield('title', 'Sistem Penilaian Kinerja Guru BARS') | {{ auth()->check() ? auth()->user()->nama : 'Admin' }}">
+    <meta property="og:description" content="@yield('meta_description', 'Sistem Informasi Penilaian Kinerja Guru Berbasis BARS SDN 01 Sungai Raya Kepulauan')">
+    <meta property="og:image" content="{{ asset('template/assetsnew/img/favicon/favicon.ico') }}">
+
     <link rel="icon" type="image/x-icon" href="{{ url('template/assetsnew/img/favicon/favicon.ico') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,6 +35,10 @@
         class="template-customizer-theme-css" />
     <link rel="stylesheet" href="{{ url('template/assetsnew/css/demo.css') }}" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+
+    <!-- Vite Assets (Tailwind CSS & JS) -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
@@ -32,10 +52,12 @@
         <div class="layout-container">
             @include('admin.includes.sidebar')
             <div class="layout-page">
-                @include('admin.includes.navbar')
-                <div class="content-wrapper">
+                <header>
+                    @include('admin.includes.navbar')
+                </header>
+                <main class="content-wrapper">
                     @yield('content')
-                </div>
+                </main>
                 @include('admin.includes.footer')
             </div>
         </div>

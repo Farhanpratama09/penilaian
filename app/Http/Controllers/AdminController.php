@@ -4,19 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Anchor;
-use App\Models\Kriteria; { {
-    }
-}
-
+use App\Models\Kriteria;
 use App\Models\NilaiAkhir;
 use App\Models\SubKriteria;
 use Illuminate\Http\Request;
 use App\Models\PenilaianGuru;
 use App\Models\TahunPenilaian;
 use App\Models\PeriodePenilaian;
+use App\Services\BarsCalculator;
 use Illuminate\Support\Facades\Hash;
-
-use function PHPUnit\Framework\isNull;
 use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
@@ -35,36 +31,17 @@ class AdminController extends Controller
         }
         $formulir = $formulir->orderBy('id', 'desc')->get();
 
-        $formulirsel = PenilaianGuru::where('status', 'SELESAI');
+        $formulirsel = PenilaianGuru::with(['hasil_penilaian_guru.anchor', 'user'])->where('status', 'SELESAI');
         if (request('user_id')) {
             $formulirsel = $formulirsel->where('user_id', request('user_id'));
         }
         $formulirsel = $formulirsel->orderBy('id', 'desc')->get();
         $formulirsel = $formulirsel->map(function ($item) {
-            $kriteria = Kriteria::all();
-            $nak = 0;
-            foreach ($kriteria as $k) {
-                $nv = 0;
-                foreach ($k->subKriteria as $sk) {
-                    foreach ($item->hasil_penilaian_guru as $h) {
-                        if ($h->anchor->sub_kriteria_id == $sk->id) {
-                            $nv += $h->anchor->bobot;
-                            break;
-                        }
-                    }
-                }
-                $nv = $nv / $k->subKriteria->count();
-                $nv = $nv * $k->bobot;
-                $nak += $nv;
-            }
-            $item->nilai_akhir = round($nak, 2);
-            $nilai_akhir = NilaiAkhir::all();
-            foreach ($nilai_akhir as $na) {
-                if ($nak >= $na->batas_bawah && $nak <= $na->batas_atas) {
-                    $item->predikat = $na->nilai_akhir;
-                    break;
-                }
-            }
+            $calc = BarsCalculator::calculate($item);
+            $item->nilai_akhir = $calc['nilai_akhir'];
+            $item->predikat = $calc['predikat'];
+            $item->predikat_class = $calc['predikat_class'];
+            $item->rating_perilaku_kerja = $calc['rating_perilaku_kerja'];
             return $item;
         });
 
@@ -94,7 +71,7 @@ class AdminController extends Controller
         $totalBobotLain = Kriteria::where('id', '!=', $id)->sum('bobot');
 
         // Check if the new bobot is valid
-        if (($totalBobotLain + $bobotBaru) > 1) {
+        if (round((float) $totalBobotLain + (float) $bobotBaru, 4) > 1.0) {
             return back()->withErrors(['bobot' => 'Total bobot tidak boleh lebih dari 100%']);
         }
         $kriteria->kriteria = $request->kriteria;
@@ -156,14 +133,14 @@ class AdminController extends Controller
             'role' => '2',
         ]);
 
-        return redirect()->back()->with('success', 'Akun Guru Berhasil Dibuat');
+        return redirect()->back()->with('success', 'Akun Kepala Sekolah Berhasil Dibuat');
     }
 
     public function edit_user(Request $request, $id)
     {
         $request->validate([
             'nama' => 'required',
-            'username' => 'required',
+            'username' => 'required|unique:users,username,' . $id,
             'password' => 'nullable|min:5',
         ]);
 
@@ -171,23 +148,23 @@ class AdminController extends Controller
 
         if (!$user) return back()->withErrors(['User tidak ditemukan']);
 
-        try {
-            $user->nama = $request->nama;
-            $user->username = $request->username;
-            $user->pangkat = $request->pangkat;
-            $user->jabatan = $request->jabatan;
-            $user->unit_kerja = $request->unit_kerja;
-            if ($request->password) $user->password = bcrypt($request->password);
-            $user->update();
-        } catch (\Throwable $th) {
-            return back()->withErrors(['username' => 'Username sudah digunakan']);
-        }
+        $user->nama = $request->nama;
+        $user->username = $request->username;
+        $user->pangkat = $request->pangkat;
+        $user->jabatan = $request->jabatan;
+        $user->unit_kerja = $request->unit_kerja;
+        if ($request->password) $user->password = bcrypt($request->password);
+        $user->update();
 
         return back()->with('success', 'Data berhasil diubah');
     }
 
     public function delete_user($id)
     {
+        if ($id == auth()->id()) {
+            return back()->withErrors(['Tidak dapat menghapus akun Anda sendiri']);
+        }
+
         $user = User::find($id);
 
         if (!$user) return back()->withErrors(['User tidak ditemukan']);
@@ -249,6 +226,7 @@ class AdminController extends Controller
     {
         $rules = [
             'nama' => 'required',
+            'username' => 'required|unique:users,username,' . auth()->id(),
         ];
 
         if ($request->password_lama && $request->password_baru) {
@@ -310,19 +288,24 @@ class AdminController extends Controller
 
         if ($tahun->aktif == 1 && $request->aktif == 0) {
             $penilaian_guru = PenilaianGuru::where('tahun_penilaian_id', $id)->get();
+            $kepsek = User::where('role', 2)->first();
+            $penilai_id = $kepsek ? $kepsek->id : null;
+            $sub_kriteria_belum_terisi = SubKriteria::all();
             foreach ($penilaian_guru as $pg) {
                 if ($pg->status !== "SELESAI") {
-                    $sub_kriteria_belum_terisi = SubKriteria::all();
                     $pg->hasil_penilaian_guru()->delete();
                     foreach ($sub_kriteria_belum_terisi as $sk) {
-                        $pg->hasil_penilaian_guru()->create([
-                            'anchor_id' => $sk->anchor()->orderBy('bobot')->first()->id
-                        ]);
+                        $anchor = $sk->anchor()->orderBy('bobot')->first();
+                        if ($anchor) {
+                            $pg->hasil_penilaian_guru()->create([
+                                'anchor_id' => $anchor->id
+                            ]);
+                        }
                     }
 
                     $pg->update([
                         'status' => 'SELESAI',
-                        'penilai_id' => User::where('role', 2)->first()->id
+                        'penilai_id' => $penilai_id
                     ]);
                 }
             }
@@ -380,19 +363,24 @@ class AdminController extends Controller
 
         if ($periode->aktif == 1 && $request->aktif == 0) {
             $penilaian_guru = PenilaianGuru::where('periode_penilaian_id', $id)->get();
+            $kepsek = User::where('role', 2)->first();
+            $penilai_id = $kepsek ? $kepsek->id : null;
+            $sub_kriteria_belum_terisi = SubKriteria::all();
             foreach ($penilaian_guru as $pg) {
                 if ($pg->status !== "SELESAI") {
-                    $sub_kriteria_belum_terisi = SubKriteria::all();
                     $pg->hasil_penilaian_guru()->delete();
                     foreach ($sub_kriteria_belum_terisi as $sk) {
-                        $pg->hasil_penilaian_guru()->create([
-                            'anchor_id' => $sk->anchor()->orderBy('bobot')->first()->id
-                        ]);
+                        $anchor = $sk->anchor()->orderBy('bobot')->first();
+                        if ($anchor) {
+                            $pg->hasil_penilaian_guru()->create([
+                                'anchor_id' => $anchor->id
+                            ]);
+                        }
                     }
 
                     $pg->update([
                         'status' => 'SELESAI',
-                        'penilai_id' => User::where('role', 2)->first()->id
+                        'penilai_id' => $penilai_id
                     ]);
                 }
             }
